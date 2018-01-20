@@ -1,0 +1,46 @@
+#!/usr/bin/perl
+
+use Time::HiRes qw (usleep);
+use IO::Socket::INET;
+$| = 1;
+
+my $r16_ip='192.168.2.10';
+my $r16_port='8899';
+
+my $relay_index=$ARGV[0];
+my $relay_state=$ARGV[1];
+
+my $prefix_on ="\x55\xaa\x00\x03\x00\x02";
+my $prefix_off="\x55\xaa\x00\x03\x00\x01";
+
+if(defined($relay_state)&&(($relay_state==0)||($relay_state==1))){
+    my $socket = new IO::Socket::INET (PeerHost => $r16_ip,PeerPort => $r16_port,Proto => 'tcp');
+    die "cannot connect to the server $!\n" unless $socket;
+
+    print "Set relay '$relay_index' '$relay_state'\n";
+
+    my $user="admin\r\n";
+    $socket->send($user);
+
+    my $response = "";
+    $socket->recv($response, 3);
+    print "login response: $response\n";
+
+    my $cmd="";
+    if($relay_state){ # turn on
+	$cmd="$prefix_on".pack("c",$relay_index).pack("c", $relay_index+5);
+    }else{ # turn off
+	$cmd="$prefix_off".pack("c",$relay_index).pack("c", $relay_index+4);
+    }
+
+    $socket->send($cmd);
+
+    $socket->recv($response, 3);
+    print ("cmd response: ".unpack("c",$response)."\n");
+
+    shutdown($socket, 1);
+
+    $socket->close();
+}else{
+    print "Usage: ./r16 relayindex state\nExample: ./r16 2 1\n";
+}
