@@ -12,6 +12,7 @@ my $relay_state=$ARGV[1];
 
 my $prefix_on ="\x55\xaa\x00\x03\x00\x02";
 my $prefix_off="\x55\xaa\x00\x03\x00\x01";
+my $state_query="\x55\xaa\x00\x02\x00\x63\x65";
 
 if(defined($relay_state)&&(($relay_state==0)||($relay_state==1))){
     my $socket = new IO::Socket::INET (PeerHost => $r16_ip,PeerPort => $r16_port,Proto => 'tcp');
@@ -35,8 +36,14 @@ if(defined($relay_state)&&(($relay_state==0)||($relay_state==1))){
 
     $socket->send($cmd);
 
-    $socket->recv($response, 3);
-    print ("cmd response: ".unpack("c",$response)."\n");
+    $socket->recv($response, 10);
+
+    my @resp=split '',substr($response,5);
+    print ("cmd response: ");
+    foreach my $r(@resp){
+	print ("[".unpack("c",$r)."]");
+    }
+    print ("\n");
 
     shutdown($socket, 1);
 
